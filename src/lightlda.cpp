@@ -109,7 +109,7 @@ namespace multiverso { namespace lightlda
         static void Initialize()
         {
             xorshift_rng rng;
-            Log::Info("minhash doc initialize");
+            Log::Info("use word_id as topic_id initialize");
             for (int32_t block = 0; block < Config::num_blocks; ++block)
             {
                 data_stream->BeforeDataAccess();
@@ -120,16 +120,10 @@ namespace multiverso { namespace lightlda
                 {
 		    // 一个完整的 doc 一定在一个 data_block 中
                     Document* doc = data_block.GetOneDoc(i);
-		    int32_t max_word_id = 0;
-		    for (int32_t word_idx = 0; word_idx < doc->Size(); ++word_idx) {
-		      if (doc->Word(word_idx) > max_word_id) max_word_id = doc->Word(word_idx);
-		    }
-		    int32_t doc_topic_id = max_word_id % Config::num_topics;
 		    for (int32_t word_idx = 0; word_idx < doc->Size(); ++word_idx) {
                       // Init the latent variable
-		      // 直接随机从 k 个 topics 中选取一个
                       if (!Config::warm_start)
-                          doc->SetTopic(word_idx, doc_topic_id);
+                          doc->SetTopic(word_idx, doc->Word(word_idx));
                       // Init the server table
 		      // word_id 和 topic_id 都是从 0 开始
                       Multiverso::AddToServer<int32_t>(kWordTopicTable,

@@ -80,10 +80,9 @@ namespace multiverso { namespace lightlda
             Document* doc = data.GetOneDoc(doc_id);
 	    // when iter 0 && slice 0, check all words in one doc belong to the same topic
 	    if (iter == 0 && slice == 0) {
-	      int32_t doc_topic_id = doc->Topic(0);
-	      for (int32_t word_idx = 1; word_idx < doc->Size(); ++word_idx) {
-	      	if (doc->Topic(word_idx) != doc_topic_id) {
-		  Log::Fatal("word topic id not equals to doc topic id, doc topic = %d, word id = %d, word topic = %d", doc_topic_id, doc->Topic(word_idx), doc->Topic(word_idx));
+	      for (int32_t word_idx = 0; word_idx < doc->Size(); ++word_idx) {
+	      	if (doc->Topic(word_idx) != doc->Word(word_idx)) {
+		  Log::Fatal("word topic id not equals to word id, word id = %d, word topic = %d", doc->Word(word_idx), doc->Topic(word_idx));
 		}
 	      }
 	    }
