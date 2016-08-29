@@ -128,13 +128,13 @@ namespace multiverso { namespace lightlda
                       // Init the latent variable
 		      // 直接随机从 k 个 topics 中选取一个
                       if (!Config::warm_start)
-                          doc->SetTopic(cursor, doc_topic_id);
+                          doc->SetTopic(word_idx, doc_topic_id);
                       // Init the server table
 		      // word_id 和 topic_id 都是从 0 开始
                       Multiverso::AddToServer<int32_t>(kWordTopicTable,
-                          doc->Word(cursor), doc->Topic(cursor), 1);
+                          doc->Word(word_idx), doc->Topic(word_idx), 1);
                       Multiverso::AddToServer<int64_t>(kSummaryRow,
-                          0, doc->Topic(cursor), 1);
+                          0, doc->Topic(word_idx), 1);
                     }
                 }
                 Multiverso::Flush();

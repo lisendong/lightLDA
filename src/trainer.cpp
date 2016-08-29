@@ -3,6 +3,7 @@
 #include "alias_table.h"
 #include "common.h"
 #include "data_block.h"
+#include "document.h"
 #include "eval.h"
 #include "meta.h"
 #include "sampler.h"
@@ -82,7 +83,7 @@ namespace multiverso { namespace lightlda
 	      int32_t doc_topic_id = doc->Topic(0);
 	      for (int32_t word_id = 1; word_id < doc->Size(); ++word_id) {
 	      	if (doc->Topic(word_id) != doc_topic_id) {
-		  LOG::Fatal("word topic id not equals to doc topic id, doc topic = %d, word id = %d, word topic = %d", doc_topic_id, word_id, doc->Topic(word_id));
+		  Log::Fatal("word topic id not equals to doc topic id, doc topic = %d, word id = %d, word topic = %d", doc_topic_id, word_id, doc->Topic(word_id));
 		}
 	      }
 	    }
