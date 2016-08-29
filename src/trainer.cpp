@@ -81,9 +81,9 @@ namespace multiverso { namespace lightlda
 	    // when iter 0 && slice 0, check all words in one doc belong to the same topic
 	    if (iter == 0 && slice == 0) {
 	      int32_t doc_topic_id = doc->Topic(0);
-	      for (int32_t word_id = 1; word_id < doc->Size(); ++word_id) {
-	      	if (doc->Topic(word_id) != doc_topic_id) {
-		  Log::Fatal("word topic id not equals to doc topic id, doc topic = %d, word id = %d, word topic = %d", doc_topic_id, word_id, doc->Topic(word_id));
+	      for (int32_t word_idx = 1; word_idx < doc->Size(); ++word_idx) {
+	      	if (doc->Topic(word_idx) != doc_topic_id) {
+		  Log::Fatal("word topic id not equals to doc topic id, doc topic = %d, word id = %d, word topic = %d", doc_topic_id, doc->Topic(word_idx), doc->Topic(word_idx));
 		}
 	      }
 	    }

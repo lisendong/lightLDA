@@ -109,6 +109,7 @@ namespace multiverso { namespace lightlda
         static void Initialize()
         {
             xorshift_rng rng;
+            Log::Info("minhash doc initialize");
             for (int32_t block = 0; block < Config::num_blocks; ++block)
             {
                 data_stream->BeforeDataAccess();
