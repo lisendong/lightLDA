@@ -77,15 +77,6 @@ namespace multiverso { namespace lightlda
         for (int32_t doc_id = id; doc_id < data.Size(); doc_id += trainer_num)
         {
             Document* doc = data.GetOneDoc(doc_id);
-	    // when iter 0 && slice 0, check all words in one doc belong to the same topic
-	    if (iter == 0 && slice == 0) {
-	      int32_t doc_topic_id = doc->Topic(0);
-	      for (int32_t word_id = 1; word_id < doc->Size(); ++word_id) {
-	      	if (doc->Topic(word_id) != doc_topic_id) {
-		  LOG::Fatal("word topic id not equals to doc topic id, doc topic = %d, word id = %d, word topic = %d", doc_topic_id, word_id, doc->Topic(word_id));
-		}
-	      }
-	    }
             num_token += sampler_->SampleOneDoc(doc, slice, lastword, model_, alias_);
         }
         if (TrainerId() == 0)
@@ -99,7 +90,7 @@ namespace multiverso { namespace lightlda
         // Evaluate loss function
         // Evaluate(lda_data_block);
         
-        if (iter % 1 == 0) // 每一轮都评估
+        if (iter % 5 == 0)
         {
             Evaluate(lda_data_block);
             if (TrainerId() == 0)
@@ -134,8 +125,7 @@ namespace multiverso { namespace lightlda
         }
         if (slice == 0 && barrier_->Wait())
         {
-            Log::Info("iter=%d, rank=%d, trainer=%d, block=%d, doc likelihood : %e\n",
-  	    lda_data_block->iteration(), Multiverso::ProcessRank(), TrainerId(), block, doc_llh_);
+            Log::Info("doc likelihood : %e\n", doc_llh_);
             doc_llh_ = 0;
         }
 
@@ -151,15 +141,14 @@ namespace multiverso { namespace lightlda
         }
         if (block == 0 && barrier_->Wait())
         {
-            Log::Info("iter=%d, rank=%d, trainer=%d, slice=%d, word likelihood=%e\n", lda_data_block->iteration(), Multiverso::ProcessRank(), TrainerId(), slice, word_llh_);
+            Log::Info("word likelihood : %e\n", word_llh_);
             word_llh_ = 0;
         }
 
         // 3. Evaluate normalize item for word likelihood
         if (TrainerId() == 0 && block == 0)
         {
-            Log::Info("iter=%d, rank=%d, trainer=%d, slice=%d, Normalized likelihood : %e\n",
- 		lda_data_block->iteration(), Multiverso::ProcessRank(), TrainerId(), slice,
+            Log::Info("Normalized likelihood : %e\n",
                 Eval::NormalizeWordLLH(this));
         }
         barrier_->Wait();

@@ -84,7 +84,6 @@ namespace multiverso { namespace lightlda
         for (int32_t i = 0; i < mh_steps_; ++i)
         {
             // Word proposal
-	    // 这里用到了 alias table， O（1）
             t = alias->Propose(word, rng_);
             if (t < 0 || t >= num_topic_)
             {
@@ -126,24 +125,19 @@ namespace multiverso { namespace lightlda
 
                 pi = nominator / denominator;
 
-		// 根据 metropolis
                 m = -(rejection < pi);
                 s = (t & m) | (s & ~m);
             }
             // Doc proposal
-	    // FIXME(lisendong) 这里按照 paper ，应该是 n_kd + alpha，这样的话下面的代码似乎有点问题
             double n_td_or_alpha = rng_.rand_double() *
                 (doc->Size() + alpha_sum_);
             if (n_td_or_alpha < doc->Size())
             {
-	    	// 在该 doc 已有的 topic 里面选一个
                 int32_t t_idx = static_cast<int32_t>(n_td_or_alpha);
                 t = doc->Topic(t_idx);
             }
             else
             {
-	    	// 在所有的 topic 里面 roll，alpha_sum_ 越大，越有可能走到这个分支
-		// alpha_sum_ = topic_num_ * alpha_
                 t = rng_.rand_k(num_topic_);
             }
             if (t != s)

@@ -34,11 +34,8 @@ namespace
 
 namespace multiverso { namespace lightlda
 { 
-    // 以下两个函数的计算过程可以参考 
-    // An Architecture for Parallel Topic Models (Alexander Smola) Page704
     double Eval::ComputeOneDocLLH(Document* doc, Row<int32_t>& doc_topic_counter)
     {
-    	// document-topic 矩阵
         if (doc->Size() == 0) return 0.0;
         double one_doc_llh = LogGamma(Config::num_topics * Config::alpha)
             - Config::num_topics * LogGamma(Config::alpha);
