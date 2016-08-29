@@ -25,6 +25,7 @@ namespace multiverso { namespace lightlda
             Barrier* barrier = new Barrier(Config::num_local_workers);
             meta.Init();
             std::vector<TrainerBase*> trainers;
+	    // trainer 只是本地的线程数！！
             for (int32_t i = 0; i < Config::num_local_workers; ++i)
             {
                 Trainer* trainer = new Trainer(alias_table, barrier, &meta);
@@ -37,6 +38,7 @@ namespace multiverso { namespace lightlda
             config.num_aggregator = Config::num_aggregator;
             config.server_endpoint_file = Config::server_file;
 
+            // param_loader 只 load 那个 slice 所需要的 table 下来到本机
             Multiverso::Init(trainers, param_loader, config, &argc, &argv);
 
             Log::ResetLogFile("LightLDA."
@@ -45,6 +47,7 @@ namespace multiverso { namespace lightlda
             data_stream = CreateDataStream();
             InitMultiverso();
             Train();
+	    // DumpModel(trainers);
 
             Multiverso::Close();
             
@@ -83,6 +86,7 @@ namespace multiverso { namespace lightlda
                         lda_block->set_iteration(i);
                         lda_block->set_block(block);
                         lda_block->set_slice(slice);
+			// Trainer::TrainIteration 调用点是这里？
                         Multiverso::PushDataBlock(lda_block);
                     }
                     Multiverso::Wait();
@@ -110,10 +114,12 @@ namespace multiverso { namespace lightlda
                 data_stream->BeforeDataAccess();
                 DataBlock& data_block = data_stream->CurrDataBlock();
                 int32_t num_slice = meta.local_vocab(block).num_slice();
+		Log::Info("block %d/%d, num_slice=%d, data_block_size=%d", block + 1, Config::num_blocks, num_slice, data_block.Size());
                 for (int32_t slice = 0; slice < num_slice; ++slice)
                 {
                     for (int32_t i = 0; i < data_block.Size(); ++i)
                     {
+		    	// 一个完整的 doc 一定在一个 data_block 中
                         Document* doc = data_block.GetOneDoc(i);
                         int32_t& cursor = doc->Cursor();
                         if (slice == 0) cursor = 0;
@@ -122,9 +128,11 @@ namespace multiverso { namespace lightlda
                         {
                             if (doc->Word(cursor) > last_word) break;
                             // Init the latent variable
+			    // 直接随机从 k 个 topics 中选取一个
                             if (!Config::warm_start)
                                 doc->SetTopic(cursor, rng.rand_k(Config::num_topics));
                             // Init the server table
+			    // word_id 和 topic_id 都是从 0 开始
                             Multiverso::AddToServer<int32_t>(kWordTopicTable,
                                 doc->Word(cursor), doc->Topic(cursor), 1);
                             Multiverso::AddToServer<int64_t>(kSummaryRow,
@@ -163,6 +171,25 @@ namespace multiverso { namespace lightlda
             }
         }
 
+	// static void DumpModel(std::vector<TrainerBase*>& trainers) {
+	//     int32_t num_vocabs = Config::num_vocabs;
+	//     TrainerBase* trainer = trainers[0];
+	//     std::string out = "model.out";
+	//     std::ofstream fout(out);
+	//     for (int word = 0; word < num_vocabs; ++word) {
+	//         Row<int32_t>& row = trainer->GetRow<int32_t>(kWordTopicTable, word);
+	// 	Row<int32_t>::iterator iter = row.Iterator();
+	// 	fout << word;
+	// 	while (iter.HasNext()) {
+	// 	    int32_t topic = iter.Key();
+	// 	    int32_t count = iter.Value();
+	// 	    fout << " " << topic << ":" << count;
+	// 	    iter.Next();
+	// 	}
+	// 	fout << std::endl;
+	//     }
+	// }
+
         static void CreateTable()
         {
             int32_t num_vocabs = Config::num_vocabs;
@@ -170,7 +197,7 @@ namespace multiverso { namespace lightlda
             Type int_type = Type::Int;
             Type longlong_type = Type::LongLong;
             multiverso::Format dense_format = multiverso::Format::Dense;
-            multiverso::Format sparse_format = multiverso::Format::Sparse;
+            // multiverso::Format sparse_format = multiverso::Format::Sparse;
 
             Multiverso::AddServerTable(kWordTopicTable, num_vocabs,
                 num_topics, int_type, dense_format);
@@ -191,6 +218,7 @@ namespace multiverso { namespace lightlda
             {
                 if (meta.tf(word) > 0)
                 {
+		    // kLoadFactor = 2
                     if (meta.tf(word) * kLoadFactor > Config::num_topics)
                     {
                         Multiverso::SetServerRow(kWordTopicTable,

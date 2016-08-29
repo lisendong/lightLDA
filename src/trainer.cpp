@@ -90,7 +90,7 @@ namespace multiverso { namespace lightlda
         // Evaluate loss function
         // Evaluate(lda_data_block);
         
-        if (iter % 5 == 0)
+        if (iter % 1 == 0) // 每一轮都评估
         {
             Evaluate(lda_data_block);
             if (TrainerId() == 0)
@@ -125,7 +125,8 @@ namespace multiverso { namespace lightlda
         }
         if (slice == 0 && barrier_->Wait())
         {
-            Log::Info("doc likelihood : %e\n", doc_llh_);
+            Log::Info("iter=%d, rank=%d, trainer=%d, block=%d, doc likelihood : %e\n",
+  	    lda_data_block->iteration(), Multiverso::ProcessRank(), TrainerId(), block, doc_llh_);
             doc_llh_ = 0;
         }
 
@@ -141,14 +142,15 @@ namespace multiverso { namespace lightlda
         }
         if (block == 0 && barrier_->Wait())
         {
-            Log::Info("word likelihood : %e\n", word_llh_);
+            Log::Info("iter=%d, rank=%d, trainer=%d, slice=%d, word likelihood=%e\n", lda_data_block->iteration(), Multiverso::ProcessRank(), TrainerId(), slice, word_llh_);
             word_llh_ = 0;
         }
 
         // 3. Evaluate normalize item for word likelihood
         if (TrainerId() == 0 && block == 0)
         {
-            Log::Info("Normalized likelihood : %e\n",
+            Log::Info("iter=%d, rank=%d, trainer=%d, slice=%d, Normalized likelihood : %e\n",
+ 		lda_data_block->iteration(), Multiverso::ProcessRank(), TrainerId(), slice,
                 Eval::NormalizeWordLLH(this));
         }
         barrier_->Wait();
