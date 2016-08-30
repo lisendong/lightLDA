@@ -48,10 +48,10 @@ namespace multiverso { namespace lightlda
         int32_t block_id_;
         /*! \brief number of data blocks in disk */
         int32_t num_blocks_;
-        /*! \brief number of training iterations */
-        int32_t num_iterations_;
         /*! \brief data path */
         std::string data_path_;
+        /*! \brief number of training iterations */
+        int32_t num_iterations_;
         /*! \brief backend thread for data preload */
         std::thread preload_thread_;
         bool working_;

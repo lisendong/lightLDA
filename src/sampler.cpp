@@ -13,6 +13,7 @@ namespace multiverso { namespace lightlda
     LightDocSampler::LightDocSampler()
     {
         alpha_ = Config::alpha;
+        asymmetric_alpha_ = Config::asymmetric_alpha;
         beta_ = Config::beta;
         num_vocab_ = Config::num_vocabs;
         num_topic_ = Config::num_topics;
@@ -84,7 +85,7 @@ namespace multiverso { namespace lightlda
         for (int32_t i = 0; i < mh_steps_; ++i)
         {
             // Word proposal
-	    // 这里用到了 alias table， O（1）
+            // 这里用到了 alias table， O（1）
             t = alias->Propose(word, rng_);
             if (t < 0 || t >= num_topic_)
             {
@@ -99,8 +100,14 @@ namespace multiverso { namespace lightlda
                 n_t = summary_row.At(t);
                 n_s = summary_row.At(s);
 
-                n_td_alpha = doc_topic_counter_->At(t) + alpha_;
-                n_sd_alpha = doc_topic_counter_->At(s) + alpha_;
+                if (asymmetric_alpha_ >= 0) {
+                    n_td_alpha = doc_topic_counter_->At(t) + alias->AlphaAt(t);
+                    n_sd_alpha = doc_topic_counter_->At(s) + alias->AlphaAt(s);
+                } else {
+                    n_td_alpha = doc_topic_counter_->At(t) + alpha_;
+                    n_sd_alpha = doc_topic_counter_->At(s) + alpha_;
+                }
+
                 n_tw_beta = w_t_cnt + beta_;
                 n_t_beta_sum = n_t + beta_sum_;
                 n_sw_beta = w_s_cnt + beta_;
@@ -126,25 +133,30 @@ namespace multiverso { namespace lightlda
 
                 pi = nominator / denominator;
 
-		// 根据 metropolis
+                // 根据 metropolis
                 m = -(rejection < pi);
                 s = (t & m) | (s & ~m);
             }
             // Doc proposal
-	    // FIXME(lisendong) 这里按照 paper ，应该是 n_kd + alpha，这样的话下面的代码似乎有点问题
-            double n_td_or_alpha = rng_.rand_double() *
-                (doc->Size() + alpha_sum_);
+            double n_td_or_alpha = 0;
+            if (asymmetric_alpha_ >= 0) {
+                n_td_or_alpha = rng_.rand_double() * (doc->Size() + alias->AsyAlphaSum());
+            } else {
+                n_td_or_alpha = rng_.rand_double() * (doc->Size() + alpha_sum_);
+            }
             if (n_td_or_alpha < doc->Size())
             {
-	    	// 在该 doc 已有的 topic 里面选一个
+                    // 在该 doc 已有的 topic 里面选一个
                 int32_t t_idx = static_cast<int32_t>(n_td_or_alpha);
                 t = doc->Topic(t_idx);
             }
             else
             {
-	    	// 在所有的 topic 里面 roll，alpha_sum_ 越大，越有可能走到这个分支
-		// alpha_sum_ = topic_num_ * alpha_
-                t = rng_.rand_k(num_topic_);
+                if (asymmetric_alpha_ >= 0) {
+                    t = alias->ProposeAsymmetricAlpha(rng_);
+                } else {
+                    t = rng_.rand_k(num_topic_);
+                }
             }
             if (t != s)
             {
@@ -155,8 +167,14 @@ namespace multiverso { namespace lightlda
                 n_t = summary_row.At(t);
                 n_s = summary_row.At(s);
 
-                n_td_alpha = doc_topic_counter_->At(t) + alpha_;
-                n_sd_alpha = doc_topic_counter_->At(s) + alpha_;
+                if (asymmetric_alpha_ >= 0) {
+                    n_td_alpha = doc_topic_counter_->At(t) + alias->AlphaAt(t);
+                    n_sd_alpha = doc_topic_counter_->At(s) + alias->AlphaAt(s);
+                } else {
+                    n_td_alpha = doc_topic_counter_->At(t) + alpha_;
+                    n_sd_alpha = doc_topic_counter_->At(s) + alpha_;
+                }
+
                 n_tw_beta = w_t_cnt + beta_;
                 n_t_beta_sum = n_t + beta_sum_;
                 n_sw_beta = w_s_cnt + beta_;
@@ -175,8 +193,13 @@ namespace multiverso { namespace lightlda
                     
                 }
 
-                proposal_s = (doc_topic_counter_->At(s) + alpha_);
-                proposal_t = (doc_topic_counter_->At(t) + alpha_);
+                if (asymmetric_alpha_ >= 0) {
+                    proposal_s = (doc_topic_counter_->At(s) + alpha_) + alias->AlphaAt(t);
+                    proposal_t = (doc_topic_counter_->At(t) + alpha_) + alias->AlphaAt(s);
+                } else {
+                    proposal_s = (doc_topic_counter_->At(s) + alpha_);
+                    proposal_t = (doc_topic_counter_->At(t) + alpha_);
+                }
 
                 nominator = n_td_alpha * n_tw_beta * n_s_beta_sum * proposal_s;
                 denominator = n_sd_alpha * n_sw_beta * n_t_beta_sum * proposal_t;

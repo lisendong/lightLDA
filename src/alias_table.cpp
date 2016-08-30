@@ -23,28 +23,82 @@ namespace multiverso { namespace lightlda
         num_vocabs_ = Config::num_vocabs;
         num_topics_ = Config::num_topics;
         beta_ = Config::beta;
+        alpha_ = Config::alpha;
+        asymmetric_alpha_ = Config::asymmetric_alpha;
         beta_sum_ = beta_ * num_vocabs_;
         memory_block_ = new int32_t[memory_size_];
         
         beta_kv_vector_ = new int32_t[2 * num_topics_];
+        alpha_kv_vector_ = new int32_t[2 * num_topics_];
 
         height_.resize(num_vocabs_);
         mass_.resize(num_vocabs_);
+        alphas_.resize(num_topics_);
+
     }
 
     AliasTable::~AliasTable()
     {
         delete[] memory_block_;
         delete[] beta_kv_vector_;
+        delete[] alpha_kv_vector_;
     }
 
     void AliasTable::Init(AliasTableIndex* table_index)
     {
         table_index_ = table_index;
     }
+    
+    void AliasTable::InitAsymmetricAlpha(ModelBase* model) 
+    {
+        // memory for build alias table, both for alpha alias and word-topic alias
+        if (q_w_proportion_ == nullptr)
+            q_w_proportion_ = new std::vector<float>(num_topics_);
+        if (q_w_proportion_int_ == nullptr)
+            q_w_proportion_int_ = new std::vector<int32_t>(num_topics_);
+        if (L_ == nullptr)
+            L_ = new std::vector<std::pair<int32_t, int32_t>>(num_topics_);
+        if (H_ == nullptr)
+            H_ = new std::vector<std::pair<int32_t, int32_t>>(num_topics_);
+        if (asymmetric_alpha_ < 0) {
+            Log::Fatal("asymmetric_alpha must be non-negative value if you try to build alpha's alias table\n");
+        }
+        // calc current alpha values
+        Row<int64_t>& topic_summary_row = model->GetSummaryRow();
+        double sum_n_t = 0;
+        for (int k = 0; k < num_topics_; ++k) {
+            double n_t = topic_summary_row.At(k);
+            sum_n_t += n_t;
+        }
+        asy_alpha_sum_ = 0;
+        for (int k = 0; k < num_topics_; ++k) {
+            double n_t = topic_summary_row.At(k);
+            double asy_alpha = alpha_ * (n_t + asymmetric_alpha_ / num_topics_) / (sum_n_t + asymmetric_alpha_);
+            alphas_[k] = asy_alpha;
+            // XXX(lisendong) reuse the q_w_proportion vector to build alpha alias table
+            (*q_w_proportion_)[k] = asy_alpha;
+            asy_alpha_sum_ += asy_alpha;
+        }
+        // build alpha's alias table according to current N_k
+        AliasMultinomialRNG(num_topics_, asy_alpha_sum_, alpha_height_, 
+            alpha_kv_vector_);
+    }
+
+    int32_t AliasTable::ProposeAsymmetricAlpha(xorshift_rng& rng) const {
+        // propose a topic according to alpha's alias table
+        auto sample = rng.rand();
+        int32_t idx = sample / alpha_height_;
+        if (num_topics_ <= idx) idx = num_topics_ - 1;
+        int32_t* p = alpha_kv_vector_ + 2 * idx; // idx 是主元素
+        int32_t k = *p++; // 另外那个元素
+        int32_t v = *p; // 分界点
+        int32_t m = -(sample < v);
+        return (idx & m) | (k & ~m);
+    }
 
     int32_t AliasTable::Build(int32_t word, ModelBase* model)
     {       
+        // memory for build alias table, both for alpha alias and word-topic alias
         if (q_w_proportion_ == nullptr)
             q_w_proportion_ = new std::vector<float>(num_topics_);
         if (q_w_proportion_int_ == nullptr)
@@ -94,6 +148,7 @@ namespace multiverso { namespace lightlda
                     int32_t n_tw = iter.Value();
                     int64_t n_t = summary_row.At(t);
                     idx_vector[size] = t;
+                    // 稀疏存储的情况，n_tw 不需要加上 beta_，beta 由 beta_mass_ 提供额外计算
                     (*q_w_proportion_)[size] = (n_tw) / (n_t + beta_sum_);
                     mass_[word] += (*q_w_proportion_)[size];
                     ++size;

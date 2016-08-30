@@ -32,9 +32,9 @@ namespace multiverso { namespace lightlda
         const int32_t* end(int32_t slice) const;
     private:
         int32_t num_slices_;
+        bool own_memory_;
         int32_t* vocabs_;
         int32_t size_;
-        bool own_memory_;
         std::vector<int32_t> slice_index_;
     };
 

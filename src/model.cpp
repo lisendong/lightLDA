@@ -35,7 +35,6 @@ namespace multiverso { namespace lightlda
         int32_t num_vocabs = Config::num_vocabs;
         int32_t num_topics = Config::num_topics;
         multiverso::Format dense_format = multiverso::Format::Dense;
-        multiverso::Format sparse_format = multiverso::Format::Sparse;
         Type int_type = Type::Int;
         Type longlong_type = Type::LongLong;
 

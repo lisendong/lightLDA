@@ -17,6 +17,8 @@ namespace multiverso { namespace lightlda
     int32_t Config::num_blocks = 1;
     int64_t Config::max_num_document = -1;
     float Config::alpha = 0.01f;
+    // XXX(lisendong) negative value means not use asymmetric alpha, just use uniform alpha value
+    float Config::asymmetric_alpha = -1.0f;
     float Config::beta = 0.01f;
     std::string Config::server_file = "";
     std::string Config::input_dir = "";
@@ -51,6 +53,7 @@ namespace multiverso { namespace lightlda
             if (strcmp(argv[i], "-num_blocks") == 0) num_blocks = atoi(argv[i + 1]);
             if (strcmp(argv[i], "-max_num_document") == 0) max_num_document = atoll(argv[i + 1]);
             if (strcmp(argv[i], "-alpha") == 0) alpha = static_cast<float>(atof(argv[i + 1]));
+            if (strcmp(argv[i], "-asymmetric_alpha") == 0) asymmetric_alpha = static_cast<float>(atof(argv[i + 1]));
             if (strcmp(argv[i], "-beta") == 0) beta = static_cast<float>(atof(argv[i + 1]));
             if (strcmp(argv[i], "-input_dir") == 0) input_dir = std::string(argv[i + 1]);
             if (strcmp(argv[i], "-server_file") == 0) server_file = std::string(argv[i + 1]);

@@ -53,6 +53,26 @@ namespace multiverso { namespace lightlda
          * \return sample proposed from the distribution
          */
         int Propose(int word, xorshift_rng& rng);
+        /*!
+         * \brief using N_k(summary_row table) to init asymmetric alpha's alias table
+         * \param model use the summary_row table in it
+         */
+        void InitAsymmetricAlpha(ModelBase* model);
+        /*!
+         * \brief sample from asymmetric alphas
+         * \param rng random number generator
+         */
+        int32_t ProposeAsymmetricAlpha(xorshift_rng& rng) const ;
+        /*! \brief get the asymmetric alpha value */
+        float AlphaAt(int32_t topic_id) const {
+            // return the topic's current alpha value
+            return alphas_[topic_id];
+        }
+        /*! \brief get the asymmetric alpha value sum */
+        float AsyAlphaSum() const {
+            return asy_alpha_sum_;
+        }        
+
         /*! \brief Clear the alias table */
         void Clear();
     private:
@@ -64,10 +84,16 @@ namespace multiverso { namespace lightlda
 
         std::vector<int32_t> height_;
         std::vector<float> mass_;
+        // store alpha for each topic, update when topic summary row updates, size = TopicNumber
+        std::vector<float> alphas_;
         int32_t beta_height_;
+        // used for asymmetric alpha alias table 
+        int32_t alpha_height_;
         float beta_mass_;
+        
 
         int32_t* beta_kv_vector_;
+        int32_t* alpha_kv_vector_;
 
         // thread local storage used for building alias
         _THREAD_LOCAL static std::vector<float>* q_w_proportion_;
@@ -77,7 +103,10 @@ namespace multiverso { namespace lightlda
 
         int num_vocabs_;
         int num_topics_;
+        float alpha_;
         float beta_;
+        float asymmetric_alpha_;
+        float asy_alpha_sum_;
         float beta_sum_;
 
         // No copying allowed

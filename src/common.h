@@ -55,6 +55,8 @@ namespace multiverso { namespace lightlda
         /*! \brief hyper-parameter for symmetric dirichlet prior */
         static float alpha;
         /*! \brief hyper-parameter for symmetric dirichlet prior */
+        static float asymmetric_alpha;
+        /*! \brief hyper-parameter for symmetric dirichlet prior */
         static float beta;
         /*! \brief path of input directory */
         static std::string input_dir;

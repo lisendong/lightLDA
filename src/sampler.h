@@ -73,6 +73,7 @@ namespace multiverso { namespace lightlda
     private:
         // lda hyper-parameter
         float alpha_;
+        float asymmetric_alpha_;
         float beta_;
         float alpha_sum_;
         float beta_sum_;

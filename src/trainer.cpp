@@ -20,7 +20,7 @@ namespace multiverso { namespace lightlda
     double Trainer::word_llh_ = 0.0;
 
     Trainer::Trainer(AliasTable* alias_table, 
-		Barrier* barrier, Meta* meta) : 
+                Barrier* barrier, Meta* meta) : 
         alias_(alias_table), barrier_(barrier), meta_(meta),
         model_(nullptr)
     {
@@ -65,6 +65,10 @@ namespace multiverso { namespace lightlda
             alias_->Build(*pword, model_);
         }
         if (id == 0) alias_->Build(-1, model_);
+        if (id == 0 && Config::asymmetric_alpha >= 0) {
+            // NOTE(lisendong) init new alphas and alpha's alias table
+            alias_->InitAsymmetricAlpha(model_);
+        }
         barrier_->Wait();
 
         if (TrainerId() == 0)
@@ -78,14 +82,15 @@ namespace multiverso { namespace lightlda
         for (int32_t doc_id = id; doc_id < data.Size(); doc_id += trainer_num)
         {
             Document* doc = data.GetOneDoc(doc_id);
-	    // when iter 0 && slice 0, check all words in one doc belong to the same topic
-	    if (iter == 0 && slice == 0) {
-	      for (int32_t word_idx = 0; word_idx < doc->Size(); ++word_idx) {
-	      	if (doc->Topic(word_idx) != doc->Word(word_idx)) {
-		  Log::Fatal("word topic id not equals to word id, word id = %d, word topic = %d", doc->Word(word_idx), doc->Topic(word_idx));
-		}
-	      }
-	    }
+            // when iter 0 && slice 0, check all words in one doc belong to the same topic
+            // just one of my experiment, reviewers do not need to care
+            if (iter == 0 && slice == 0) {
+              for (int32_t word_idx = 0; word_idx < doc->Size(); ++word_idx) {
+                      if (doc->Topic(word_idx) != doc->Word(word_idx)) {
+                  Log::Fatal("word topic id not equals to word id, word id = %d, word topic = %d", doc->Word(word_idx), doc->Topic(word_idx));
+                }
+              }
+            }
             num_token += sampler_->SampleOneDoc(doc, slice, lastword, model_, alias_);
         }
         if (TrainerId() == 0)
@@ -135,7 +140,7 @@ namespace multiverso { namespace lightlda
         if (slice == 0 && barrier_->Wait())
         {
             Log::Info("iter=%d, rank=%d, trainer=%d, block=%d, doc likelihood : %e\n",
-  	    lda_data_block->iteration(), Multiverso::ProcessRank(), TrainerId(), block, doc_llh_);
+              lda_data_block->iteration(), Multiverso::ProcessRank(), TrainerId(), block, doc_llh_);
             doc_llh_ = 0;
         }
 
@@ -159,7 +164,7 @@ namespace multiverso { namespace lightlda
         if (TrainerId() == 0 && block == 0)
         {
             Log::Info("iter=%d, rank=%d, trainer=%d, slice=%d, Normalized likelihood : %e\n",
- 		lda_data_block->iteration(), Multiverso::ProcessRank(), TrainerId(), slice,
+                 lda_data_block->iteration(), Multiverso::ProcessRank(), TrainerId(), slice,
                 Eval::NormalizeWordLLH(this));
         }
         barrier_->Wait();
