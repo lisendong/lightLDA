@@ -64,7 +64,19 @@ namespace multiverso { namespace lightlda
         {
             alias_->Build(*pword, model_);
         }
-        if (id == 0) alias_->Build(-1, model_);
+        if (id == 0) {
+            alias_->Build(-1, model_);
+            // statistic current non-empty topic number
+            Row<int64_t>& topic_summary_row = model_->GetSummaryRow();
+            int32_t non_zero_topic = 0;
+            for (int k = 0; k < Config::num_topics; ++k) {
+                if (topic_summary_row.At(k) > 0) {
+                    ++non_zero_topic;
+                }
+            }
+            Log::Info("Rank=%d, non_zero_topic=%d\n", Multiverso::ProcessRank(), non_zero_topic);
+        }
+
         if (id == 0 && Config::asymmetric_alpha >= 0) {
             // NOTE(lisendong) init new alphas and alpha's alias table
             alias_->InitAsymmetricAlpha(model_);
@@ -82,13 +94,21 @@ namespace multiverso { namespace lightlda
         for (int32_t doc_id = id; doc_id < data.Size(); doc_id += trainer_num)
         {
             Document* doc = data.GetOneDoc(doc_id);
-            int32_t doc_topic_id = doc->Topic(0);
             // when iter 0 && slice 0, check all words in one doc belong to the same topic
             // just one of my experiment, reviewers do not need to care
             if (iter == 0 && slice == 0) {
-              for (int32_t word_idx = 1; word_idx < doc->Size(); ++word_idx) {
-                      if (doc->Topic(word_idx) != doc_topic_id) {
-                  Log::Fatal("word topic id not equals to doc topic id, word id = %d, word topic = %d, doc topic = %d\n", doc->Word(word_idx), doc->Topic(word_idx), doc_topic_id);
+              if (Config::word_init) {
+                for (int32_t word_idx = 0; word_idx < doc->Size(); ++word_idx) {
+                        if (doc->Topic(word_idx) != doc->Word(word_idx)) {
+                    Log::Fatal("word topic id not equals to word id, word id = %d, word topic = %d\n", doc->Word(word_idx), doc->Topic(word_idx));
+                  }
+                }
+              } else {
+                int32_t doc_topic_id = doc->Topic(0);
+                for (int32_t word_idx = 1; word_idx < doc->Size(); ++word_idx) {
+                        if (doc->Topic(word_idx) != doc_topic_id) {
+                    Log::Fatal("word topic id not equals to doc topic id, word id = %d, word topic = %d, doc topic = %d\n", doc->Word(word_idx), doc->Topic(word_idx), doc_topic_id);
+                  }
                 }
               }
             }

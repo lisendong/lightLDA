@@ -25,6 +25,7 @@ namespace multiverso { namespace lightlda
     bool Config::warm_start = false;
     bool Config::inference = false;
     bool Config::out_of_core = false;
+    bool Config::word_init = false;
     int64_t Config::data_capacity = 1024 * kMB;
     int64_t Config::model_capacity = 512 * kMB;
     int64_t Config::delta_capacity = 256 * kMB;
@@ -59,6 +60,7 @@ namespace multiverso { namespace lightlda
             if (strcmp(argv[i], "-server_file") == 0) server_file = std::string(argv[i + 1]);
             if (strcmp(argv[i], "-warm_start") == 0) warm_start = true;
             if (strcmp(argv[i], "-out_of_core") == 0) out_of_core = true;
+            if (strcmp(argv[i], "-word_init") == 0) word_init = true;
             if (strcmp(argv[i], "-data_capacity") == 0) data_capacity = atoi(argv[i + 1]) * kMB;
             if (strcmp(argv[i], "-model_capacity") == 0) model_capacity = atoi(argv[i + 1]) * kMB;
             if (strcmp(argv[i], "-alias_capacity") == 0) alias_capacity = atoi(argv[i + 1]) * kMB;

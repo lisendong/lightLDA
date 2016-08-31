@@ -109,13 +109,17 @@ namespace multiverso { namespace lightlda
         static void Initialize()
         {
             xorshift_rng rng;
-            Log::Info("minhash doc initialize");
+            if (Config::word_init) {
+                Log::Info("use word_id as topic_id initialize\n");
+            } else {
+                Log::Info("minhash doc initialize\n");
+            }
             for (int32_t block = 0; block < Config::num_blocks; ++block)
             {
                 data_stream->BeforeDataAccess();
                 DataBlock& data_block = data_stream->CurrDataBlock();
                 int32_t num_slice = meta.local_vocab(block).num_slice();
-                Log::Info("block %d/%d, num_slice=%d, data_block_size=%d", block + 1, Config::num_blocks, num_slice, data_block.Size());
+                Log::Info("block %d/%d, num_slice=%d, data_block_size=%d\n", block + 1, Config::num_blocks, num_slice, data_block.Size());
                 for (int32_t i = 0; i < data_block.Size(); ++i)
                 {
                     // 一个完整的 doc 一定在一个 data_block 中
@@ -127,8 +131,14 @@ namespace multiverso { namespace lightlda
                     int32_t doc_topic_id = max_word_id % Config::num_topics;
                     for (int32_t word_idx = 0; word_idx < doc->Size(); ++word_idx) {
                       // Init the latent variable
-                      if (!Config::warm_start)
-                          doc->SetTopic(word_idx, doc_topic_id);
+                      if (!Config::warm_start) {
+                          if (Config::word_init) {
+                              // use word_id as topic_id
+                              doc->SetTopic(word_idx, doc->Word(word_idx));
+                          } else {
+                              doc->SetTopic(word_idx, doc_topic_id);
+                          }
+                      }
                       // Init the server table
                       // word_id 和 topic_id 都是从 0 开始
                       Multiverso::AddToServer<int32_t>(kWordTopicTable,
