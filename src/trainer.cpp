@@ -82,12 +82,13 @@ namespace multiverso { namespace lightlda
         for (int32_t doc_id = id; doc_id < data.Size(); doc_id += trainer_num)
         {
             Document* doc = data.GetOneDoc(doc_id);
+            int32_t doc_topic_id = doc->Topic(0);
             // when iter 0 && slice 0, check all words in one doc belong to the same topic
             // just one of my experiment, reviewers do not need to care
             if (iter == 0 && slice == 0) {
-              for (int32_t word_idx = 0; word_idx < doc->Size(); ++word_idx) {
-                      if (doc->Topic(word_idx) != doc->Word(word_idx)) {
-                  Log::Fatal("word topic id not equals to word id, word id = %d, word topic = %d", doc->Word(word_idx), doc->Topic(word_idx));
+              for (int32_t word_idx = 1; word_idx < doc->Size(); ++word_idx) {
+                      if (doc->Topic(word_idx) != doc_topic_id) {
+                  Log::Fatal("word topic id not equals to doc topic id, word id = %d, word topic = %d, doc topic = %d\n", doc->Word(word_idx), doc->Topic(word_idx), doc_topic_id);
                 }
               }
             }
@@ -104,7 +105,7 @@ namespace multiverso { namespace lightlda
         // Evaluate loss function
         // Evaluate(lda_data_block);
         
-        if (iter % 1 == 0) // 每一轮都评估
+        if (iter % 2 == 0) // 每一轮都评估
         {
             Evaluate(lda_data_block);
             if (TrainerId() == 0)

@@ -109,23 +109,28 @@ namespace multiverso { namespace lightlda
         static void Initialize()
         {
             xorshift_rng rng;
-            Log::Info("use word_id as topic_id initialize");
+            Log::Info("minhash doc initialize");
             for (int32_t block = 0; block < Config::num_blocks; ++block)
             {
                 data_stream->BeforeDataAccess();
                 DataBlock& data_block = data_stream->CurrDataBlock();
                 int32_t num_slice = meta.local_vocab(block).num_slice();
-		Log::Info("block %d/%d, num_slice=%d, data_block_size=%d", block + 1, Config::num_blocks, num_slice, data_block.Size());
+                Log::Info("block %d/%d, num_slice=%d, data_block_size=%d", block + 1, Config::num_blocks, num_slice, data_block.Size());
                 for (int32_t i = 0; i < data_block.Size(); ++i)
                 {
-		    // 一个完整的 doc 一定在一个 data_block 中
+                    // 一个完整的 doc 一定在一个 data_block 中
                     Document* doc = data_block.GetOneDoc(i);
-		    for (int32_t word_idx = 0; word_idx < doc->Size(); ++word_idx) {
+                    int32_t max_word_id = 0;
+                    for (int32_t word_idx = 0; word_idx < doc->Size(); ++word_idx) {
+                        if (doc->Word(word_idx) > max_word_id) max_word_id = doc->Word(word_idx);
+                    }
+                    int32_t doc_topic_id = max_word_id % Config::num_topics;
+                    for (int32_t word_idx = 0; word_idx < doc->Size(); ++word_idx) {
                       // Init the latent variable
                       if (!Config::warm_start)
-                          doc->SetTopic(word_idx, doc->Word(word_idx));
+                          doc->SetTopic(word_idx, doc_topic_id);
                       // Init the server table
-		      // word_id 和 topic_id 都是从 0 开始
+                      // word_id 和 topic_id 都是从 0 开始
                       Multiverso::AddToServer<int32_t>(kWordTopicTable,
                           doc->Word(word_idx), doc->Topic(word_idx), 1);
                       Multiverso::AddToServer<int64_t>(kSummaryRow,
