@@ -194,8 +194,8 @@ namespace multiverso { namespace lightlda
                 }
 
                 if (asymmetric_alpha_ >= 0) {
-                    proposal_s = (doc_topic_counter_->At(s) + alpha_) + alias->AlphaAt(t);
-                    proposal_t = (doc_topic_counter_->At(t) + alpha_) + alias->AlphaAt(s);
+                    proposal_s = doc_topic_counter_->At(s) + alias->AlphaAt(s);
+                    proposal_t = doc_topic_counter_->At(t) + alias->AlphaAt(t);
                 } else {
                     proposal_s = (doc_topic_counter_->At(s) + alpha_);
                     proposal_t = (doc_topic_counter_->At(t) + alpha_);

@@ -31,11 +31,13 @@ DUMP_BINARY_SRC = $(shell find $(PROJECT)/preprocess -type f -name "*.cpp")
 
 BIN_DIR = $(PROJECT)/bin
 LIGHTLDA = $(BIN_DIR)/lightlda
+ALPHA_ALIAS_TEST = $(BIN_DIR)/alpha_alias_test
 INFER = $(BIN_DIR)/infer
 DUMP_BINARY = $(BIN_DIR)/dump_binary
 
 all: path \
 	 lightlda \
+	 ${ALPHA_ALIAS_TEST} \
 	 infer \
 	 dump_binary
 
@@ -58,6 +60,9 @@ $(INFER_OBJ): %.o: %.cpp $(INFER_HEADERS) $(MULTIVERSO_INC)
 
 $(DUMP_BINARY): $(DUMP_BINARY_SRC)
 	$(CXX) $(CXXFLAGS) $< -o $@
+
+$(ALPHA_ALIAS_TEST): ./test/alpha_alias_test.cpp $(BASE_OBJ)
+	$(CXX) ./test/alpha_alias_test.cpp $(BASE_OBJ) $(CXXFLAGS) $(INC_FLAGS) $(LD_FLAGS) -o $@
 
 lightlda: path $(LIGHTLDA)
 

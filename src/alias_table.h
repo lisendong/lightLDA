@@ -10,6 +10,8 @@
 #include <mutex>
 #include <vector>
 
+#include <multiverso/row.h>
+
 #if defined(_WIN32) || defined(_WIN64)
 // vs currently not support c++11 keyword thread_local
 #define _THREAD_LOCAL __declspec(thread) 
@@ -53,6 +55,7 @@ namespace multiverso { namespace lightlda
          * \return sample proposed from the distribution
          */
         int Propose(int word, xorshift_rng& rng);
+        void InitAsymmetricAlpha(Row<int64_t>& topic_summary_row);
         /*!
          * \brief using N_k(summary_row table) to init asymmetric alpha's alias table
          * \param model use the summary_row table in it

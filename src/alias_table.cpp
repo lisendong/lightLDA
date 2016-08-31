@@ -48,9 +48,14 @@ namespace multiverso { namespace lightlda
     {
         table_index_ = table_index;
     }
-    
+
     void AliasTable::InitAsymmetricAlpha(ModelBase* model) 
     {
+        Row<int64_t>& topic_summary_row = model->GetSummaryRow();
+        InitAsymmetricAlpha(topic_summary_row);
+    }
+
+    void AliasTable::InitAsymmetricAlpha(Row<int64_t>& topic_summary_row) {
         // memory for build alias table, both for alpha alias and word-topic alias
         if (q_w_proportion_ == nullptr)
             q_w_proportion_ = new std::vector<float>(num_topics_);
@@ -64,15 +69,14 @@ namespace multiverso { namespace lightlda
             Log::Fatal("asymmetric_alpha must be non-negative value if you try to build alpha's alias table\n");
         }
         // calc current alpha values
-        Row<int64_t>& topic_summary_row = model->GetSummaryRow();
         double sum_n_t = 0;
         for (int k = 0; k < num_topics_; ++k) {
-            double n_t = topic_summary_row.At(k);
+            int64_t n_t = topic_summary_row.At(k);
             sum_n_t += n_t;
         }
         asy_alpha_sum_ = 0;
         for (int k = 0; k < num_topics_; ++k) {
-            double n_t = topic_summary_row.At(k);
+            int64_t n_t = topic_summary_row.At(k);
             double asy_alpha = alpha_ * (n_t + asymmetric_alpha_ / num_topics_) / (sum_n_t + asymmetric_alpha_);
             alphas_[k] = asy_alpha;
             // XXX(lisendong) reuse the q_w_proportion vector to build alpha alias table
